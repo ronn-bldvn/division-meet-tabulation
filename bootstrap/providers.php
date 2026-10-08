@@ -1,7 +1,28 @@
 <?php
 
-use App\Providers\AppServiceProvider;
+namespace App\Providers;
 
-return [
-    AppServiceProvider::class,
-];
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL; // <-- Add this import
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        // Add this block to force HTTPS in production:
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+    }
+}
