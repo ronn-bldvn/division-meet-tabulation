@@ -266,6 +266,85 @@ class AutomaticMedalAssignmentTest extends TestCase
         $this->get('/?level=high_school')->assertOk()->assertSee('High School 1')->assertDontSee('Elementary 1');
     }
 
+    public function test_single_elimination_medals_can_be_manually_selected_and_protected_from_match_updates(): void
+    {
+        [$game, $facilitator, $teams] = $this->makeGame('single_elimination');
+        $final = GameMatch::create([
+            'game_id' => $game->id,
+            'round' => 'final',
+            'match_number' => 1,
+            'team1_id' => $teams[0]->id,
+            'team2_id' => $teams[1]->id,
+        ]);
+
+        $this->actingAs($facilitator)->get(route('facilitator.medals.index', $game))
+            ->assertOk()
+            ->assertSee('Save All Medals')
+            ->assertSee('manually select the podium');
+
+        $this->actingAs($facilitator)->post(route('facilitator.medals.store', $game), [
+            'medals' => [
+                'gold' => ['team_id' => $teams[2]->id],
+                'silver' => ['team_id' => $teams[0]->id],
+                'bronze' => ['team_id' => $teams[3]->id],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAs($facilitator)->put(route('facilitator.matches.update', [$game, $final]), [
+            'winner_id' => $teams[1]->id,
+            'status' => 'completed',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('games', ['id' => $game->id, 'manual_medals' => true]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'gold', 'team_id' => $teams[2]->id]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'silver', 'team_id' => $teams[0]->id]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'bronze', 'team_id' => $teams[3]->id]);
+    }
+
+    public function test_double_elimination_medals_can_be_manually_selected(): void
+    {
+        [$game, $facilitator, $teams] = $this->makeGame('double_elimination');
+        $final = GameMatch::create([
+            'game_id' => $game->id,
+            'round' => 'grand_final',
+            'match_number' => 1,
+            'team1_id' => $teams[0]->id,
+            'team2_id' => $teams[1]->id,
+        ]);
+
+        $this->actingAs($facilitator)->get(route('facilitator.medals.index', $game))
+            ->assertOk()
+            ->assertSee('Save All Medals');
+
+        $this->actingAs($facilitator)->post(route('facilitator.medals.store', $game), [
+            'medals' => [
+                'gold' => ['team_id' => $teams[1]->id],
+                'silver' => ['team_id' => $teams[2]->id],
+                'bronze' => ['team_id' => $teams[0]->id],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('games', ['id' => $game->id, 'manual_medals' => true]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'gold', 'team_id' => $teams[1]->id]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'silver', 'team_id' => $teams[2]->id]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'bronze', 'team_id' => $teams[0]->id]);
+
+        $this->actingAs($facilitator)->put(route('facilitator.matches.update', [$game, $final]), [
+            'winner_id' => $teams[0]->id,
+            'status' => 'completed',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'gold', 'team_id' => $teams[1]->id]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'silver', 'team_id' => $teams[2]->id]);
+        $this->assertDatabaseHas('medals', ['game_id' => $game->id, 'type' => 'bronze', 'team_id' => $teams[0]->id]);
+
+        $this->actingAs($facilitator)->post(route('facilitator.medals.automatic', $game))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Automatic medal assignment will resume when the next match result is saved.');
+
+        $this->assertDatabaseHas('games', ['id' => $game->id, 'manual_medals' => false]);
+    }
+
     public function test_facilitator_can_edit_bracket_format_before_matches_are_added(): void
     {
         [$game, $facilitator] = $this->makeGame('none');

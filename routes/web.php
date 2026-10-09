@@ -47,6 +47,7 @@ Route::middleware(['auth', 'role:facilitator'])->prefix('facilitator')->name('fa
 
     Route::get('/games/{game}/medals', [MedalController::class, 'index'])->name('medals.index');
     Route::post('/games/{game}/medals', [MedalController::class, 'store'])->name('medals.store');
+    Route::post('/games/{game}/medals/automatic', [MedalController::class, 'resumeAutomatic'])->name('medals.automatic');
 });
 
 /*

@@ -7,14 +7,30 @@
 @if($game->bracket_type !== 'none')
     <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg px-4 py-3 mb-6 text-sm">
         @if($game->bracket_type === 'round_robin')
-            Complete every scheduled match. Medals are calculated from match wins, with head-to-head results resolving ties.
+            Medals are calculated from match wins, with head-to-head results resolving ties. You can also manually select the podium below.
         @elseif($game->bracket_type === 'double_elimination')
-            Complete the grand final (and reset final if required) to award gold and silver automatically. Bronze comes from the losers' final.
+            The grand final and losers' final determine medals automatically. You can also manually select the podium below.
         @else
-            Complete the final in the bracket to award gold, silver, and bronze automatically from the match winners.
+            The final and third-place match determine medals automatically. You can also manually select the podium below.
         @endif
     </div>
+    @if($game->manual_medals)
+        <div class="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg px-4 py-3 mb-6 text-sm">
+            Manual medal selection is active. Bracket results will not change these awards.
+        </div>
+        <form method="POST" action="{{ route('facilitator.medals.automatic', $game) }}" class="mb-6">
+            @csrf
+            <button class="rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
+                Resume Automatic Medal Assignment
+            </button>
+            <p class="mt-2 text-xs text-slate-500">Automatic awards will be recalculated the next time a match result is saved.</p>
+        </form>
+    @endif
 @else
+    <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg px-4 py-3 mb-6 text-sm">
+        This event has no bracket. Select the gold, silver, and bronze medalists below.
+    </div>
+@endif
 
 <form method="POST" action="{{ route('facilitator.medals.store', $game) }}" enctype="multipart/form-data">
     @csrf
@@ -38,5 +54,4 @@
 </div>
     <button class="mt-6 w-full bg-yellow-500 hover:bg-yellow-400 text-white rounded-lg py-3 text-sm font-medium">Save All Medals</button>
 </form>
-@endif
 @endsection

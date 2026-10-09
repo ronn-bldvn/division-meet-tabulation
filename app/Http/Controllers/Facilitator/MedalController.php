@@ -32,10 +32,6 @@ class MedalController extends Controller
     {
         $this->authorizeGame($game);
 
-        if ($game->bracket_type !== 'none') {
-            return back()->withErrors(['medals' => 'Medals are determined automatically from completed bracket results.']);
-        }
-
         $data = $request->validate([
             'medals' => ['required', 'array:gold,silver,bronze'],
             'medals.gold.team_id' => ['required', 'exists:teams,id'],
@@ -68,9 +64,23 @@ class MedalController extends Controller
                 $medal->save();
             }
 
-            $game->update(['status' => 'completed']);
+            $game->update([
+                'status' => 'completed',
+                'manual_medals' => $game->bracket_type !== 'none',
+            ]);
         });
 
         return back()->with('status', 'All medals saved.');
+    }
+
+    public function resumeAutomatic(Game $game)
+    {
+        $this->authorizeGame($game);
+
+        abort_if($game->bracket_type === 'none', 404);
+
+        $game->update(['manual_medals' => false]);
+
+        return back()->with('status', 'Automatic medal assignment will resume when the next match result is saved.');
     }
 }

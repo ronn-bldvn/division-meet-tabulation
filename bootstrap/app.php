@@ -10,10 +10,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
-        // Add this line:
-        $middleware->trustProxies(at: '*');
+    ->withMiddleware(function (Illuminate\Foundation\Configuration\Middleware $middleware) {
+        $middleware->alias([
+            'role' => \App\Http\Middleware\EnsureRole::class,
+        ]);
     })
-    ->withExceptions(function (Exceptions $exceptions) {
+    ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

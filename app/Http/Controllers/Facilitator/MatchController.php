@@ -237,6 +237,10 @@ class MatchController extends Controller
 
     private function updateAutomaticMedals(Game $game): ?string
     {
+        if ($game->manual_medals && $game->bracket_type !== 'double_elimination') {
+            return null;
+        }
+
         if ($game->bracket_type === 'single_elimination') {
             $final = $game->matches()->where('round', 'final')->where('status', 'completed')->latest('id')->first();
             if (! $final || ! $final->winner_id || ! $final->team1_id || ! $final->team2_id) {
@@ -397,6 +401,10 @@ class MatchController extends Controller
 
     private function saveAutomaticMedals(Game $game, array $awards, bool $completed = false): void
     {
+        if ($game->manual_medals) {
+            return;
+        }
+
         foreach (['gold', 'silver', 'bronze'] as $type) {
             if (isset($awards[$type])) {
                 Medal::updateOrCreate(
@@ -413,6 +421,10 @@ class MatchController extends Controller
 
     private function clearAutomaticMedals(Game $game): void
     {
+        if ($game->manual_medals) {
+            return;
+        }
+
         Medal::where('game_id', $game->id)->delete();
         $game->update(['status' => 'ongoing']);
     }

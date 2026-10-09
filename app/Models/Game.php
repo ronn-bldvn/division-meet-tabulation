@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Game extends Model
 {
-    protected $fillable = ['sport_id', 'name', 'category', 'level', 'bracket_type', 'status'];
+    protected $fillable = ['sport_id', 'name', 'category', 'level', 'bracket_type', 'status', 'manual_medals'];
+
+    protected $casts = ['manual_medals' => 'boolean'];
 
     /** Human-readable label for this game's level (Elementary / High School). */
     public function levelLabel(): string
